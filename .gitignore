@@ -28,3 +28,6 @@ dist-ssr
 .dockerignore
 Dockerfile
 .vite
+.env
+init.sql
+docker-compose.yml
