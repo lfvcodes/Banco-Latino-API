@@ -3,14 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const router = express.Router();
 
-// Usuario de prueba (en producción usa una DB)
-const users = [
-  {
-    id: 1,
-    username: "admin",
-    password: bcrypt.hashSync("admin123", 8),
-  },
-];
+const dbConnect = require('../dbConnect');
 
 router.post("/login", async (req, res) => {
   try {
@@ -18,32 +11,42 @@ router.post("/login", async (req, res) => {
 
     // Validaciones básicas
     if (!username || !password) {
-      return res
-        .status(400)
-        .json({ message: "Usuario y contraseña requeridos" });
+      return res.status(400).json({ message: "Usuario y contraseña requeridos" });
     }
 
-    const user = users.find((u) => u.username === username);
+    const db = await dbConnect();
+    let user;
+    if (process.env.DATABASE_TYPE === 'mysql') {
+      const [rows] = await db.execute('SELECT account, username, psw FROM user WHERE username = ?', [username]);
+      user = rows[0];
+    } else if (process.env.DATABASE_TYPE === 'postgresql') {
+      const result = await db.query('SELECT account, username, psw FROM user WHERE username = $1', [username]);
+      user = result.rows[0];
+    } else if (process.env.DATABASE_TYPE === 'sqlserver') {
+      const result = await db.request().input('username', username).query('SELECT account, username, psw FROM user WHERE username = @username');
+      user = result.recordset[0];
+    }
+  
     if (!user) {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.psw);
     if (!valid) {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
     // Generar token JWT
     const token = jwt.sign(
-      { id: user.id, username: user.username },
-      process.env.JWT_SECRET || "secreto_desarrollo",
+      { id: user.account, username: user.username },
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
-
+    console.log(token);
     res.json({
       token,
       user: {
-        id: user.id,
+        account: user.account,
         username: user.username,
       },
     });
