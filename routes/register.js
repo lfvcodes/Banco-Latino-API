@@ -1,6 +1,6 @@
 const express = require("express");
-// const jwt = require("jsonwebtoken");
-// const bcrypt = require("bcryptjs");
+const bcrypt = require("bcryptjs");
+const dbConnect = require("../dbConnect");
 const router = express.Router();
 
 router.post("/registro", async (req, res) => {
@@ -16,33 +16,37 @@ router.post("/registro", async (req, res) => {
 			password,
 		} = req.body;
 
-		// // Validaciones básicas
-		// if (!username || !password) {
-		// 	return res
-		// 		.status(400)
-		// 		.json({ message: "Usuario y contraseña requeridos" });
-		// }
+		// Validaciones básicas
+		if (!document_number || !document_rif || !first_name || !last_name || !email || !birth_date || !phone_number || !password) {
+			return res.status(400).json({ message: "Todos los campos son requeridos" });
+		}
 
-		// const user = users.find((u) => u.username === username);
-		// if (!user) {
-		// 	return res.status(401).json({ message: "Credenciales inválidas" });
-		// }
+		const connection = await dbConnect();
+		const hashedPassword = await bcrypt.hash(password, 10);
 
-		// const valid = await bcrypt.compare(password, user.password);
-		// if (!valid) {
-		// 	return res.status(401).json({ message: "Credenciales inválidas" });
-		// }
+		// Insertar en people
+		const [result] = await connection.execute(
+			`INSERT INTO people (dni, fiscal_dni, name, lastname, birthdate, email, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			[document_number, document_rif, first_name, last_name, birth_date, email, phone_number]
+		);
+		const id_people = result.insertId;
 
-		// // Generar token JWT
-		// const token = jwt.sign(
-		// 	{ id: user.id, username: user.username },
-		// 	process.env.JWT_SECRET || "secreto_desarrollo",
-		// 	{ expiresIn: "1h" }
-		// );
+		// Generar username y account
+		const username = email;
+		const account = Math.floor(Math.random() * 1e20).toString();
+
+		// Insertar en user
+		await connection.execute(
+			`INSERT INTO user (id_people, username, account, psw, status) VALUES (?, ?, ?, ?, 1)`,
+			[id_people, username, account, hashedPassword]
+		);
 
 		res.json({
 			message: "Registro exitoso",
 			user: {
+				id_people,
+				username,
+				account,
 				document_number,
 				document_rif,
 				first_name,
@@ -53,16 +57,9 @@ router.post("/registro", async (req, res) => {
 			},
 		});
 
-		// res.json({
-		// 	token,
-		// 	user: {
-		// 		id: user.id,
-		// 		username: user.username,
-		// 	},
-		// });
 	} catch (error) {
-		console.error("Error en login:", error);
-		res.status(500).json({ message: "Error interno del servidor" });
+		console.error("Error en registro:", error);
+		res.status(500).json({ message: "Error interno del servidor", error: error.message });
 	}
 });
 
