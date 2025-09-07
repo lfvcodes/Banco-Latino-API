@@ -31,3 +31,4 @@ Dockerfile
 .env
 init.sql
 docker-compose.yml
+probe.http
