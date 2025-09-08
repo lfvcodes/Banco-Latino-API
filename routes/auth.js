@@ -17,26 +17,38 @@ router.post("/login", async (req, res) => {
 
     switch (process.env.DATABASE_TYPE) {
       case "mysql": {
+        const query = `SELECT id_user,account, username, psw,p.name,p.lastname,
+        saldo FROM user u 
+        JOIN people p ON u.id_people = p.id_people
+         WHERE username = ?`;
         const [rows] = await db.execute(
-          "SELECT account, username, psw FROM user WHERE username = ?",
+          query,
           [username]
         );
         user = rows[0];
         break;
       }
       case "postgresql": {
+        const query = `SELECT id_user,account, username, psw,p.name,p.lastname,
+        saldo FROM user u 
+        JOIN people p ON u.id_people = p.id_people
+         WHERE username = $1`;
         const result = await db.query(
-          "SELECT account, username, psw FROM user WHERE username = $1",
+          query,
           [username]
         );
         user = result.rows[0];
         break;
       }
       case "sqlserver": {
+        const query = `SELECT id_user,account, username, psw,p.name,p.lastname,
+        saldo FROM user u 
+        JOIN people p ON u.id_people = p.id_people
+         WHERE username = @username`;
         const result = await db
           .request()
           .input("username", username)
-          .query("SELECT id_user,account, username, psw FROM user WHERE username = @username");
+          .query(query);
         user = result.recordset[0];
         break;
       }
@@ -48,25 +60,35 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    // Verificar contraseña con argon2
     const isValidPassword = await argon2.verify(user.psw, password);
     if (!isValidPassword) {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    // Generar token JWT
+    const payload = { 
+      id: user.id_user,
+      username: user.username,
+      name:user.name,
+      saldo:user.saldo,
+      lastname:user.lastname,
+      pid:0
+    };
+
     const token = jwt.sign(
-      { id: user.id_user, username: user.username },
+      payload,
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: "Lax",
+      maxAge: 3600000, // 1 hora
+    });
+
     return res.json({
-      token,
-      user: {
-        account: user.account,
-        username: user.username,
-      },
+      access:true
     });
   } catch (error) {
     console.error("Error en login:", error);
