@@ -42,7 +42,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/user", usersRegister);
-app.use("/api/movement", usersMovements);
+app.use("/api/movements", usersMovements);
 app.use("/api/home", homeInit);
 app.use("/api/logout", logoutRouter);
 
