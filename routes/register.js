@@ -12,6 +12,7 @@ router.post("/registro", async (req, res) => {
       last_name,
       email,
       birth_date,
+      dir_location,
       phone_number,
       password,
     } = req.body;
@@ -24,6 +25,7 @@ router.post("/registro", async (req, res) => {
       !last_name ||
       !email ||
       !birth_date ||
+      !dir_location ||
       !phone_number ||
       !password
     ) {
@@ -32,13 +34,11 @@ router.post("/registro", async (req, res) => {
 
     const connection = await dbConnect();
 
-    // Hashear el password con argon2
     const hashedPassword = await argon2.hash(password);
 
-    // Insertar en people
     const [result] = await connection.execute(
-      `INSERT INTO people (dni, fiscal_dni, name, lastname, birthdate, email, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [document_number, document_rif, first_name, last_name, birth_date, email, phone_number]
+      `INSERT INTO people (dni, fiscal_dni, name, lastname, birthdate, dir_location, email, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [document_number, document_rif, first_name, last_name, birth_date, dir_location, email, phone_number]
     );
     const id_people = result.insertId;
 
@@ -46,7 +46,6 @@ router.post("/registro", async (req, res) => {
     const username = email;
     const account = Math.floor(Math.random() * 1e20).toString();
 
-    // Insertar en user
     await connection.execute(
       `INSERT INTO user (id_people, username, account, psw, status) VALUES (?, ?, ?, ?, 1)`,
       [id_people, username, account, hashedPassword]

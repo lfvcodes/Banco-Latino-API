@@ -7,7 +7,6 @@ const dbConnect = require("../dbConnect");
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  // Validación básica
   if (!username || !password) {
     return res.status(400).json({ message: "Usuario y contraseña requeridos" });
   }
@@ -37,7 +36,7 @@ router.post("/login", async (req, res) => {
         const result = await db
           .request()
           .input("username", username)
-          .query("SELECT account, username, psw FROM user WHERE username = @username");
+          .query("SELECT id_user,account, username, psw FROM user WHERE username = @username");
         user = result.recordset[0];
         break;
       }
@@ -57,7 +56,7 @@ router.post("/login", async (req, res) => {
 
     // Generar token JWT
     const token = jwt.sign(
-      { id: user.account, username: user.username },
+      { id: user.id_user, username: user.username },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );

@@ -40,7 +40,6 @@ app.use("/", indexRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/user", usersRegister);
 
-// Manejo de errores
 app.use(function (req, res, next) {
 	next(createError(404));
 });
