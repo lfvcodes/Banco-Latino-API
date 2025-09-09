@@ -8,6 +8,7 @@ const cors = require("cors");
 const indexRouter = require("./routes/index");
 const usersRegister = require("./routes/register");
 const usersMovements = require("./routes/movements");
+const contacts = require("./routes/contacts");
 const logoutRouter = require("./routes/logout");
 const authRouter = require("./routes/auth");
 const homeInit = require("./routes/home");
@@ -45,6 +46,7 @@ app.use("/api/user", usersRegister);
 app.use("/api/movements", usersMovements);
 app.use("/api/home", homeInit);
 app.use("/api/logout", logoutRouter);
+app.use("/api/contacts",contacts);
 
 app.use(function (req, res, next) {
 	next(createError(404));
