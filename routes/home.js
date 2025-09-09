@@ -11,13 +11,13 @@ router.get("/", async (req, res) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const { name, saldo } = decoded;
+    const { name, saldo,account } = decoded;
 
     if (name === undefined || saldo === undefined) {
       return res.status(400).json({ message: "Datos incompletos en el token" });
     }
 
-    return res.json({ name, saldo });
+    return res.json({ name, saldo,account });
   } catch (error) {
     console.error("Error en /home:", error.message);
     return res.status(500).json({ message: "Error interno del servidor" });
